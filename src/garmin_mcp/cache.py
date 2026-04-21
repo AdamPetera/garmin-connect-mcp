@@ -1,16 +1,18 @@
 import json
 import logging
 import sqlite3
-from datetime import datetime, timedelta
+from contextlib import contextmanager
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 _db_path: Path = Path.home() / ".garmin_mcp_cache.db"
-_LIST_TTL = timedelta(seconds=3600)
+_LIST_TTL = timedelta(hours=1)
 
 
-def _connect() -> sqlite3.Connection:
+@contextmanager
+def _connect():
     conn = sqlite3.connect(_db_path)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS activity_details (
@@ -27,7 +29,10 @@ def _connect() -> sqlite3.Connection:
         )
     """)
     conn.commit()
-    return conn
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 def get_activity_details(activity_id: str) -> dict | None:
@@ -48,8 +53,9 @@ def set_activity_details(activity_id: str, data: dict) -> None:
         with _connect() as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO activity_details VALUES (?, ?, ?)",
-                (str(activity_id), json.dumps(data), datetime.utcnow().isoformat()),
+                (str(activity_id), json.dumps(data), datetime.now(UTC).isoformat()),
             )
+            conn.commit()
     except Exception:
         logger.warning("Cache write failed for activity_id=%s", activity_id)
 
@@ -64,7 +70,7 @@ def get_activity_list(cache_key: str) -> list | None:
             if not row:
                 return None
             fetched_at = datetime.fromisoformat(row[1])
-            if datetime.utcnow() - fetched_at > _LIST_TTL:
+            if datetime.now(UTC) - fetched_at > _LIST_TTL:
                 return None
             return json.loads(row[0])
     except Exception:
@@ -77,7 +83,8 @@ def set_activity_list(cache_key: str, data: list) -> None:
         with _connect() as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO activity_list VALUES (?, ?, ?)",
-                (cache_key, json.dumps(data), datetime.utcnow().isoformat()),
+                (cache_key, json.dumps(data), datetime.now(UTC).isoformat()),
             )
+            conn.commit()
     except Exception:
         logger.warning("Cache write failed for cache_key=%s", cache_key)

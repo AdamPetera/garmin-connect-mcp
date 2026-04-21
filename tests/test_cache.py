@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 import pytest
 from garmin_mcp import cache
 
@@ -28,7 +28,7 @@ def test_activity_details_overwrite():
 def test_activity_details_never_expires():
     data = {"activityId": "999"}
     cache.set_activity_details("999", data)
-    old_time = (datetime.utcnow() - timedelta(days=365)).isoformat()
+    old_time = (datetime.now(UTC) - timedelta(days=365)).isoformat()
     with sqlite3.connect(cache._db_path) as conn:
         conn.execute(
             "UPDATE activity_details SET fetched_at = ? WHERE activity_id = ?",
@@ -49,7 +49,7 @@ def test_set_and_get_activity_list():
 
 def test_activity_list_expires_after_one_hour():
     cache.set_activity_list("key", [{"activityId": "1"}])
-    two_hours_ago = (datetime.utcnow() - timedelta(hours=2)).isoformat()
+    two_hours_ago = (datetime.now(UTC) - timedelta(hours=2)).isoformat()
     with sqlite3.connect(cache._db_path) as conn:
         conn.execute(
             "UPDATE activity_list SET fetched_at = ? WHERE cache_key = ?",
@@ -60,7 +60,7 @@ def test_activity_list_expires_after_one_hour():
 
 def test_activity_list_still_valid_within_one_hour():
     cache.set_activity_list("key", [{"activityId": "1"}])
-    thirty_min_ago = (datetime.utcnow() - timedelta(minutes=30)).isoformat()
+    thirty_min_ago = (datetime.now(UTC) - timedelta(minutes=30)).isoformat()
     with sqlite3.connect(cache._db_path) as conn:
         conn.execute(
             "UPDATE activity_list SET fetched_at = ? WHERE cache_key = ?",
