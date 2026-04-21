@@ -2,6 +2,24 @@
 
 Local MCP server exposing Garmin Connect workout data to AI assistants.
 
+## Prerequisite: Install `uv`
+
+This MCP is installed with `uv sync` and launched with `uv run`, so you need `uv` installed locally before continuing.
+
+### macOS
+
+Install with Homebrew:
+
+```bash
+brew install uv
+```
+
+Or use the official installer:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
 ## Setup
 
 **1. Clone and install**
@@ -85,8 +103,7 @@ Or add to `.claude/mcp.json` in any project directory:
 Add to `~/.codex/config.toml`:
 
 ```toml
-[[mcp_servers]]
-name = "garmin"
+[mcp_servers.garmin]
 command = "uv"
 args = [
   "run",
