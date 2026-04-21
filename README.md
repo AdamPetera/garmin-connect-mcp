@@ -46,7 +46,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
       "args": [
         "run",
         "--directory",
-        "/Users/adam/Documents/Other/Projects/garmin-connect-mcp",
+        "/path/to/garmin-connect-mcp",
         "garmin-mcp"
       ]
     }
@@ -59,7 +59,7 @@ Restart Claude Desktop after saving.
 ### Claude Code
 
 ```bash
-claude mcp add garmin -- uv run --directory /Users/adam/Documents/Other/Projects/garmin-connect-mcp garmin-mcp
+claude mcp add garmin -- uv run --directory /path/to/garmin-connect-mcp garmin-mcp
 ```
 
 Or add to `.claude/mcp.json` in any project directory:
@@ -72,7 +72,7 @@ Or add to `.claude/mcp.json` in any project directory:
       "args": [
         "run",
         "--directory",
-        "/Users/adam/Documents/Other/Projects/garmin-connect-mcp",
+        "/path/to/garmin-connect-mcp",
         "garmin-mcp"
       ]
     }
@@ -91,7 +91,7 @@ command = "uv"
 args = [
   "run",
   "--directory",
-  "/Users/adam/Documents/Other/Projects/garmin-connect-mcp",
+  "/path/to/garmin-connect-mcp",
   "garmin-mcp"
 ]
 ```
