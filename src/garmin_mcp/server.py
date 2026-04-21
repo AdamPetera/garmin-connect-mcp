@@ -1,33 +1,38 @@
 import logging
+import threading
 from datetime import date
 
 from mcp.server.fastmcp import FastMCP
 
 from garmin_mcp import cache, garmin
 
-logging.basicConfig(level=logging.WARNING)
+logger = logging.getLogger(__name__)
 
 mcp = FastMCP("garmin-connect")
 _client: garmin.GarminClient | None = None
+_client_lock = threading.Lock()
 
 
 def _get_client() -> garmin.GarminClient:
     global _client
     if _client is None:
-        _client = garmin.GarminClient()
+        with _client_lock:
+            if _client is None:
+                _client = garmin.GarminClient()
     return _client
 
 
 @mcp.tool()
 def get_last_activity() -> dict:
-    """Get the most recent Garmin activity with full details including laps and HR."""
+    """Get the most recent Garmin activity with full details including laps and HR. Returns {} if no activities found."""
     client = _get_client()
     activity = client.get_last_activity()
     if not activity:
         return {}
     activity_id = str(activity.get("activityId", ""))
     if not activity_id:
-        return activity
+        logger.warning("get_last_activity: response missing activityId, returning summary only")
+        return {}
     cached = cache.get_activity_details(activity_id)
     if cached is not None:
         return cached
@@ -42,7 +47,7 @@ def get_activities(
     end_date: str = "",
     activity_type: str = "",
 ) -> list:
-    """Get activities in a date range. Dates in YYYY-MM-DD. activity_type e.g. 'running', 'cycling'."""
+    """Get activities in a date range. Dates in YYYY-MM-DD format. activity_type filters by sport e.g. 'running', 'cycling'. Returns list of activity summaries."""
     if not end_date:
         end_date = date.today().isoformat()
     cache_key = f"{start_date}:{end_date}:{activity_type}"
@@ -57,7 +62,7 @@ def get_activities(
 
 @mcp.tool()
 def get_activity_details(activity_id: str) -> dict:
-    """Get full details for a specific activity by ID, including laps, splits, and HR zones."""
+    """Get full details for a specific Garmin activity ID, including laps, splits, and HR zones."""
     cached = cache.get_activity_details(activity_id)
     if cached is not None:
         return cached
@@ -68,4 +73,5 @@ def get_activity_details(activity_id: str) -> dict:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.WARNING)
     mcp.run()

@@ -46,6 +46,13 @@ def test_get_last_activity_returns_empty_when_garmin_has_none(mock_garmin_client
     assert get_last_activity() == {}
 
 
+def test_get_last_activity_returns_empty_when_activity_missing_id(mock_garmin_client):
+    from garmin_mcp.server import get_last_activity
+    mock_garmin_client.get_last_activity.return_value = {"activityName": "Run"}
+    assert get_last_activity() == {}
+    mock_garmin_client.get_activity_details.assert_not_called()
+
+
 def test_get_activities_fetches_and_caches(mock_garmin_client):
     from garmin_mcp.server import get_activities
     mock_garmin_client.get_activities.return_value = [{"activityId": "1"}]
