@@ -1,0 +1,83 @@
+import json
+import logging
+import sqlite3
+from datetime import datetime, timedelta
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+_db_path: Path = Path.home() / ".garmin_mcp_cache.db"
+_LIST_TTL = timedelta(seconds=3600)
+
+
+def _connect() -> sqlite3.Connection:
+    conn = sqlite3.connect(_db_path)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS activity_details (
+            activity_id TEXT PRIMARY KEY,
+            data        TEXT NOT NULL,
+            fetched_at  TEXT NOT NULL
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS activity_list (
+            cache_key  TEXT PRIMARY KEY,
+            data       TEXT NOT NULL,
+            fetched_at TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    return conn
+
+
+def get_activity_details(activity_id: str) -> dict | None:
+    try:
+        with _connect() as conn:
+            row = conn.execute(
+                "SELECT data FROM activity_details WHERE activity_id = ?",
+                (str(activity_id),),
+            ).fetchone()
+            return json.loads(row[0]) if row else None
+    except Exception:
+        logger.warning("Cache read failed for activity_id=%s", activity_id)
+        return None
+
+
+def set_activity_details(activity_id: str, data: dict) -> None:
+    try:
+        with _connect() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO activity_details VALUES (?, ?, ?)",
+                (str(activity_id), json.dumps(data), datetime.utcnow().isoformat()),
+            )
+    except Exception:
+        logger.warning("Cache write failed for activity_id=%s", activity_id)
+
+
+def get_activity_list(cache_key: str) -> list | None:
+    try:
+        with _connect() as conn:
+            row = conn.execute(
+                "SELECT data, fetched_at FROM activity_list WHERE cache_key = ?",
+                (cache_key,),
+            ).fetchone()
+            if not row:
+                return None
+            fetched_at = datetime.fromisoformat(row[1])
+            if datetime.utcnow() - fetched_at > _LIST_TTL:
+                return None
+            return json.loads(row[0])
+    except Exception:
+        logger.warning("Cache read failed for cache_key=%s", cache_key)
+        return None
+
+
+def set_activity_list(cache_key: str, data: list) -> None:
+    try:
+        with _connect() as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO activity_list VALUES (?, ?, ?)",
+                (cache_key, json.dumps(data), datetime.utcnow().isoformat()),
+            )
+    except Exception:
+        logger.warning("Cache write failed for cache_key=%s", cache_key)
