@@ -68,14 +68,16 @@ def test_get_activity_details(client, mock_api):
 
 def test_get_last_activity_retries_once_on_failure(client, mock_api):
     mock_api.get_activities.side_effect = [Exception("timeout"), [{"activityId": "1"}]]
-    with patch("garmin_mcp.garmin.time.sleep"):
+    with patch("garmin_mcp.garmin.time.sleep") as mock_sleep:
         result = client.get_last_activity()
     assert result == {"activityId": "1"}
     assert mock_api.get_activities.call_count == 2
+    mock_sleep.assert_called_once_with(2)
 
 
 def test_get_last_activity_raises_after_two_failures(client, mock_api):
     mock_api.get_activities.side_effect = Exception("rate limited")
-    with patch("garmin_mcp.garmin.time.sleep"):
+    with patch("garmin_mcp.garmin.time.sleep") as mock_sleep:
         with pytest.raises(RuntimeError, match="rate limited"):
             client.get_last_activity()
+    mock_sleep.assert_called_once_with(2)

@@ -24,7 +24,7 @@ class GarminClient:
         password = os.environ.get("GARMIN_PASSWORD")
         if not email or not password:
             raise RuntimeError(
-                "GARMIN_EMAIL and GARMIN_PASSWORD must be set in .env"
+                "GARMIN_EMAIL and GARMIN_PASSWORD must be set (via .env or environment)"
             )
         self._api = Garmin(email, password)
         self._api.login()
