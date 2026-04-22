@@ -1,10 +1,18 @@
+import logging
 import os
 import time
+from pathlib import Path
 
 from dotenv import load_dotenv
 from garminconnect import Garmin
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
+
+
+def _token_dir() -> str:
+    return os.environ.get("GARMIN_TOKEN_DIR", str(Path.home() / ".garth"))
 
 
 def _with_retry(fn, *args, **kwargs):
@@ -20,14 +28,32 @@ def _with_retry(fn, *args, **kwargs):
 
 class GarminClient:
     def __init__(self) -> None:
+        token_dir = _token_dir()
+
+        # 1. Try garth tokens
+        try:
+            api = Garmin()
+            api.garth.load(token_dir)
+            self._api = api
+            return
+        except Exception:
+            pass
+
+        # 2. Fall back to env credentials
         email = os.environ.get("GARMIN_EMAIL")
         password = os.environ.get("GARMIN_PASSWORD")
         if not email or not password:
             raise RuntimeError(
-                "GARMIN_EMAIL and GARMIN_PASSWORD must be set (via .env or environment)"
+                "Run 'garmin-mcp-setup' to authenticate, "
+                "or set GARMIN_EMAIL and GARMIN_PASSWORD in .env"
             )
-        self._api = Garmin(email, password)
-        self._api.login()
+        api = Garmin(email, password)
+        api.login()
+        try:
+            api.garth.dump(token_dir)
+        except Exception as exc:
+            logger.warning("Could not save auth tokens to %s: %s", token_dir, exc)
+        self._api = api
 
     def get_last_activity(self) -> dict:
         activities = _with_retry(self._api.get_activities, 0, 1)
