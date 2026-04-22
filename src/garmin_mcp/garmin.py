@@ -34,6 +34,7 @@ class GarminClient:
         try:
             api = Garmin()
             api.garth.load(token_dir)
+            api.login()
             self._api = api
             return
         except (FileNotFoundError, OSError):

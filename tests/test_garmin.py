@@ -13,7 +13,8 @@ def mock_api():
 
 
 @pytest.fixture
-def client(mock_api, monkeypatch):
+def client(mock_api, monkeypatch, tmp_path):
+    monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
     monkeypatch.setenv("GARMIN_EMAIL", "test@example.com")
     monkeypatch.setenv("GARMIN_PASSWORD", "testpass")
     return GarminClient()
@@ -99,7 +100,7 @@ def test_uses_garth_tokens_when_available(monkeypatch, tmp_path):
         instance.garth.load.return_value = None  # tokens found — no side_effect
         client = GarminClient()
     instance.garth.load.assert_called_once_with(str(tmp_path))
-    instance.login.assert_not_called()
+    instance.login.assert_called_once()
 
 
 def test_falls_back_to_env_creds_when_no_tokens(monkeypatch, tmp_path):
