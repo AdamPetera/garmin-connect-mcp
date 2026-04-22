@@ -36,7 +36,7 @@ class GarminClient:
             api.garth.load(token_dir)
             self._api = api
             return
-        except Exception:
+        except (FileNotFoundError, OSError):
             pass
 
         # 2. Fall back to env credentials

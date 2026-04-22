@@ -19,7 +19,8 @@ def client(mock_api, monkeypatch):
     return GarminClient()
 
 
-def test_raises_without_email(monkeypatch):
+def test_raises_without_email(monkeypatch, tmp_path):
+    monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
     monkeypatch.delenv("GARMIN_EMAIL", raising=False)
     monkeypatch.delenv("GARMIN_PASSWORD", raising=False)
     with patch("garmin_mcp.garmin.Garmin") as MockGarmin:
@@ -28,7 +29,8 @@ def test_raises_without_email(monkeypatch):
             GarminClient()
 
 
-def test_raises_without_password(monkeypatch):
+def test_raises_without_password(monkeypatch, tmp_path):
+    monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
     monkeypatch.setenv("GARMIN_EMAIL", "test@example.com")
     monkeypatch.delenv("GARMIN_PASSWORD", raising=False)
     with patch("garmin_mcp.garmin.Garmin") as MockGarmin:
