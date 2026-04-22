@@ -29,7 +29,21 @@ cd garmin-connect-mcp
 uv sync
 ```
 
-**2. Configure credentials**
+**2. Authenticate**
+
+Run the interactive setup command:
+
+```bash
+uv run garmin-mcp-setup
+```
+
+This prompts for your Garmin email and password, logs in, and saves OAuth tokens to `~/.garth`. You only need to do this once — the server loads the saved tokens automatically on startup.
+
+If your account has MFA enabled, you will be prompted for the code during setup.
+
+**Alternative: environment variables**
+
+If you prefer not to use the token store, set credentials in `.env` instead:
 
 ```bash
 cp .env.example .env
@@ -41,6 +55,8 @@ Edit `.env`:
 GARMIN_EMAIL=your@email.com
 GARMIN_PASSWORD=yourpassword
 ```
+
+The server tries saved tokens first; `.env` credentials are used as a fallback.
 
 ## Available Tools
 
