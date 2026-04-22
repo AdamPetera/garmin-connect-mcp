@@ -25,3 +25,14 @@ def test_setup_main_warns_if_token_save_fails(monkeypatch, tmp_path, capsys):
         setup_main()
     captured = capsys.readouterr()
     assert "Warning" in captured.out
+
+
+def test_setup_main_exits_on_login_failure(monkeypatch, tmp_path):
+    monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
+    with patch("garmin_mcp.auth.input", return_value="test@example.com"), \
+         patch("garmin_mcp.auth.getpass.getpass", return_value="badpass"), \
+         patch("garmin_mcp.auth.Garmin") as MockGarmin:
+        instance = MockGarmin.return_value
+        instance.login.side_effect = Exception("Invalid credentials")
+        with pytest.raises(SystemExit):
+            setup_main()

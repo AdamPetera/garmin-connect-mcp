@@ -1,20 +1,20 @@
 import getpass
-import os
-from pathlib import Path
 
 from garminconnect import Garmin
 
-
-def _token_dir() -> str:
-    return os.environ.get("GARMIN_TOKEN_DIR", str(Path.home() / ".garth"))
+from garmin_mcp.garmin import _token_dir
 
 
 def setup_main() -> None:
     email = input("Garmin email: ")
     password = getpass.getpass("Garmin password: ")
     print("Logging in...")
-    api = Garmin(email, password)
-    api.login()
+    try:
+        api = Garmin(email, password)
+        api.login()
+    except Exception as exc:
+        print(f"Login failed: {exc}")
+        raise SystemExit(1)
     token_dir = _token_dir()
     try:
         api.garth.dump(token_dir)
