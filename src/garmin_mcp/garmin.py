@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def _token_dir() -> str:
-    return os.environ.get("GARMIN_TOKEN_DIR", str(Path.home() / ".garth"))
+    return os.environ.get("GARMIN_TOKEN_DIR", str(Path.home() / ".garminconnect"))
 
 
 def _with_retry(fn, *args, **kwargs):
@@ -29,32 +29,18 @@ def _with_retry(fn, *args, **kwargs):
 class GarminClient:
     def __init__(self) -> None:
         token_dir = _token_dir()
-
-        # 1. Try saved tokens
-        try:
-            api = Garmin()
-            api.client.load(token_dir)
-            if not api.client.is_authenticated:
-                api.login()
-            self._api = api
-            return
-        except Exception:
-            pass
-
-        # 2. Fall back to env credentials
         email = os.environ.get("GARMIN_EMAIL")
         password = os.environ.get("GARMIN_PASSWORD")
-        if not email or not password:
-            raise RuntimeError(
-                "Run 'garmin-mcp-setup' to authenticate, "
-                "or set GARMIN_EMAIL and GARMIN_PASSWORD in .env"
-            )
-        api = Garmin(email, password)
-        api.login()
+        api = Garmin(email, password) if (email and password) else Garmin()
         try:
-            api.client.dump(token_dir)
+            api.login(tokenstore=token_dir)
         except Exception as exc:
-            logger.warning("Could not save auth tokens to %s: %s", token_dir, exc)
+            if not email or not password:
+                raise RuntimeError(
+                    "Run 'garmin-mcp-setup' to authenticate, "
+                    "or set GARMIN_EMAIL and GARMIN_PASSWORD in .env"
+                ) from exc
+            raise
         self._api = api
 
     def get_last_activity(self) -> dict:
@@ -68,3 +54,24 @@ class GarminClient:
 
     def get_activity_details(self, activity_id: str) -> dict:
         return _with_retry(self._api.get_activity, str(activity_id))
+
+    def get_daily_wellness(self, date: str) -> dict:
+        return {
+            "stats": _with_retry(self._api.get_stats, date),
+            "sleep": _with_retry(self._api.get_sleep_data, date),
+            "body_battery": _with_retry(self._api.get_body_battery, date),
+            "hrv": _with_retry(self._api.get_hrv_data, date),
+            "resting_hr": _with_retry(self._api.get_rhr_day, date),
+        }
+
+    def get_training_status(self, date: str) -> dict:
+        return {
+            "readiness": _with_retry(self._api.get_training_readiness, date),
+            "status": _with_retry(self._api.get_training_status, date),
+        }
+
+    def get_race_predictions(self) -> dict:
+        return _with_retry(self._api.get_race_predictions)
+
+    def get_personal_records(self) -> dict:
+        return _with_retry(self._api.get_personal_record)

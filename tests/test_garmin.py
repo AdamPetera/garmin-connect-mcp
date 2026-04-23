@@ -124,3 +124,50 @@ def test_raises_when_no_tokens_and_no_env_creds(monkeypatch, tmp_path):
         instance.garth.load.side_effect = FileNotFoundError
         with pytest.raises(RuntimeError, match="garmin-mcp-setup"):
             GarminClient()
+
+
+def test_get_daily_wellness_calls_all_endpoints(client, mock_api):
+    mock_api.get_stats.return_value = {"totalSteps": 8000}
+    mock_api.get_sleep_data.return_value = {"dailySleepDTO": {"sleepScore": 78}}
+    mock_api.get_body_battery.return_value = [{"charged": 85, "drained": 15}]
+    mock_api.get_hrv_data.return_value = {"hrvSummary": {"lastNight": 55}}
+    mock_api.get_rhr_day.return_value = {"restingHeartRate": 52}
+
+    result = client.get_daily_wellness("2026-04-23")
+
+    assert result["stats"] == {"totalSteps": 8000}
+    assert result["sleep"] == {"dailySleepDTO": {"sleepScore": 78}}
+    assert result["body_battery"] == [{"charged": 85, "drained": 15}]
+    assert result["hrv"] == {"hrvSummary": {"lastNight": 55}}
+    assert result["resting_hr"] == {"restingHeartRate": 52}
+    mock_api.get_stats.assert_called_once_with("2026-04-23")
+    mock_api.get_sleep_data.assert_called_once_with("2026-04-23")
+    mock_api.get_body_battery.assert_called_once_with("2026-04-23")
+    mock_api.get_hrv_data.assert_called_once_with("2026-04-23")
+    mock_api.get_rhr_day.assert_called_once_with("2026-04-23")
+
+
+def test_get_training_status_calls_both_endpoints(client, mock_api):
+    mock_api.get_training_readiness.return_value = {"score": 72, "level": "GOOD"}
+    mock_api.get_training_status.return_value = {"trainingStatusDTO": {"latestTrainingStatusVO": {"trainingStatus": "MAINTAINING"}}}
+
+    result = client.get_training_status("2026-04-23")
+
+    assert result["readiness"] == {"score": 72, "level": "GOOD"}
+    assert result["status"] == {"trainingStatusDTO": {"latestTrainingStatusVO": {"trainingStatus": "MAINTAINING"}}}
+    mock_api.get_training_readiness.assert_called_once_with("2026-04-23")
+    mock_api.get_training_status.assert_called_once_with("2026-04-23")
+
+
+def test_get_race_predictions_returns_result(client, mock_api):
+    mock_api.get_race_predictions.return_value = {"racePredictions": [{"raceDistance": "5K", "timePrediction": 1500}]}
+    result = client.get_race_predictions()
+    assert result == {"racePredictions": [{"raceDistance": "5K", "timePrediction": 1500}]}
+    mock_api.get_race_predictions.assert_called_once_with()
+
+
+def test_get_personal_records_returns_result(client, mock_api):
+    mock_api.get_personal_record.return_value = {"personalRecords": [{"typeId": 1, "value": 300}]}
+    result = client.get_personal_records()
+    assert result == {"personalRecords": [{"typeId": 1, "value": 300}]}
+    mock_api.get_personal_record.assert_called_once_with()
