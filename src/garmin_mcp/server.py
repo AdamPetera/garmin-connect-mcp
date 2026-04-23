@@ -72,6 +72,64 @@ def get_activity_details(activity_id: str) -> dict:
     return details
 
 
+@mcp.tool()
+def get_daily_wellness(for_date: str = "") -> dict:
+    """Get a daily wellness snapshot for a date (YYYY-MM-DD, defaults to today).
+    Returns combined stats (steps, calories), sleep (stages, score, duration),
+    body battery, HRV summary, and resting heart rate."""
+    if not for_date:
+        for_date = date.today().isoformat()
+    cache_key = f"wellness:{for_date}"
+    cached = cache.get_daily_data(cache_key)
+    if cached is not None:
+        return cached
+    client = _get_client()
+    data = client.get_daily_wellness(for_date)
+    cache.set_daily_data(cache_key, data)
+    return data
+
+
+@mcp.tool()
+def get_training_status(for_date: str = "") -> dict:
+    """Get training readiness and training status for a date (YYYY-MM-DD, defaults to today).
+    Returns readiness score with contributing factors and training load/status."""
+    if not for_date:
+        for_date = date.today().isoformat()
+    cache_key = f"training:{for_date}"
+    cached = cache.get_daily_data(cache_key)
+    if cached is not None:
+        return cached
+    client = _get_client()
+    data = client.get_training_status(for_date)
+    cache.set_daily_data(cache_key, data)
+    return data
+
+
+@mcp.tool()
+def get_race_predictions() -> dict:
+    """Get current predicted race times for 5K, 10K, half marathon, and marathon
+    based on recent training data."""
+    cached = cache.get_static_data("race_predictions")
+    if cached is not None:
+        return cached
+    client = _get_client()
+    data = client.get_race_predictions()
+    cache.set_static_data("race_predictions", data)
+    return data
+
+
+@mcp.tool()
+def get_personal_records() -> dict:
+    """Get personal records across all activity types."""
+    cached = cache.get_static_data("personal_records")
+    if cached is not None:
+        return cached
+    client = _get_client()
+    data = client.get_personal_records()
+    cache.set_static_data("personal_records", data)
+    return data
+
+
 def main() -> None:
     logging.basicConfig(level=logging.WARNING)
     mcp.run()

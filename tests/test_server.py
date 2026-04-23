@@ -99,3 +99,85 @@ def test_get_activity_details_uses_cache(mock_garmin_client):
     result = get_activity_details("42")
     assert result["cached"] is True
     mock_garmin_client.get_activity_details.assert_not_called()
+
+
+def test_get_daily_wellness_fetches_and_caches(mock_garmin_client):
+    from garmin_mcp.server import get_daily_wellness
+    mock_garmin_client.get_daily_wellness.return_value = {"stats": {"totalSteps": 8000}, "sleep": {}, "body_battery": [], "hrv": None, "resting_hr": {}}
+    result = get_daily_wellness("2026-04-23")
+    assert result["stats"] == {"totalSteps": 8000}
+    mock_garmin_client.get_daily_wellness.assert_called_once_with("2026-04-23")
+
+
+def test_get_daily_wellness_uses_cache(mock_garmin_client):
+    from garmin_mcp.server import get_daily_wellness
+    cached = {"stats": {"totalSteps": 5000}, "sleep": {}, "body_battery": [], "hrv": None, "resting_hr": {}}
+    cache.set_daily_data("wellness:2026-04-23", cached)
+    result = get_daily_wellness("2026-04-23")
+    assert result["stats"]["totalSteps"] == 5000
+    mock_garmin_client.get_daily_wellness.assert_not_called()
+
+
+def test_get_daily_wellness_defaults_to_today(mock_garmin_client):
+    from datetime import date
+    from garmin_mcp.server import get_daily_wellness
+    mock_garmin_client.get_daily_wellness.return_value = {"stats": {}, "sleep": {}, "body_battery": [], "hrv": None, "resting_hr": {}}
+    get_daily_wellness()
+    mock_garmin_client.get_daily_wellness.assert_called_once_with(date.today().isoformat())
+
+
+def test_get_training_status_fetches_and_caches(mock_garmin_client):
+    from garmin_mcp.server import get_training_status
+    mock_garmin_client.get_training_status.return_value = {"readiness": {"score": 72}, "status": {}}
+    result = get_training_status("2026-04-23")
+    assert result["readiness"]["score"] == 72
+    mock_garmin_client.get_training_status.assert_called_once_with("2026-04-23")
+
+
+def test_get_training_status_uses_cache(mock_garmin_client):
+    from garmin_mcp.server import get_training_status
+    cached = {"readiness": {"score": 55}, "status": {}}
+    cache.set_daily_data("training:2026-04-23", cached)
+    result = get_training_status("2026-04-23")
+    assert result["readiness"]["score"] == 55
+    mock_garmin_client.get_training_status.assert_not_called()
+
+
+def test_get_training_status_defaults_to_today(mock_garmin_client):
+    from datetime import date
+    from garmin_mcp.server import get_training_status
+    mock_garmin_client.get_training_status.return_value = {"readiness": {}, "status": {}}
+    get_training_status()
+    mock_garmin_client.get_training_status.assert_called_once_with(date.today().isoformat())
+
+
+def test_get_race_predictions_fetches_and_caches(mock_garmin_client):
+    from garmin_mcp.server import get_race_predictions
+    mock_garmin_client.get_race_predictions.return_value = {"racePredictions": []}
+    result = get_race_predictions()
+    assert result == {"racePredictions": []}
+    mock_garmin_client.get_race_predictions.assert_called_once_with()
+
+
+def test_get_race_predictions_uses_cache(mock_garmin_client):
+    from garmin_mcp.server import get_race_predictions
+    cache.set_static_data("race_predictions", {"racePredictions": [{"distance": "5K"}]})
+    result = get_race_predictions()
+    assert result["racePredictions"][0]["distance"] == "5K"
+    mock_garmin_client.get_race_predictions.assert_not_called()
+
+
+def test_get_personal_records_fetches_and_caches(mock_garmin_client):
+    from garmin_mcp.server import get_personal_records
+    mock_garmin_client.get_personal_records.return_value = {"personalRecords": []}
+    result = get_personal_records()
+    assert result == {"personalRecords": []}
+    mock_garmin_client.get_personal_records.assert_called_once_with()
+
+
+def test_get_personal_records_uses_cache(mock_garmin_client):
+    from garmin_mcp.server import get_personal_records
+    cache.set_static_data("personal_records", {"personalRecords": [{"type": "running"}]})
+    result = get_personal_records()
+    assert result["personalRecords"][0]["type"] == "running"
+    mock_garmin_client.get_personal_records.assert_not_called()
