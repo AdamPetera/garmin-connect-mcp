@@ -8,7 +8,6 @@ def mock_api():
     with patch("garmin_mcp.garmin.Garmin") as MockGarmin:
         instance = MockGarmin.return_value
         instance.login.return_value = None
-        instance.garth.load.side_effect = FileNotFoundError
         yield instance
 
 
