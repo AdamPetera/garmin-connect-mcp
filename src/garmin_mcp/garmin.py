@@ -70,8 +70,8 @@ class GarminClient:
             "status": _with_retry(self._api.get_training_status, date),
         }
 
-    def get_race_predictions(self) -> dict:
+    def get_race_predictions(self) -> dict | list:
         return _with_retry(self._api.get_race_predictions)
 
-    def get_personal_records(self) -> dict:
+    def get_personal_records(self) -> dict | list:
         return _with_retry(self._api.get_personal_record)

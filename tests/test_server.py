@@ -181,3 +181,15 @@ def test_get_personal_records_uses_cache(mock_garmin_client):
     result = get_personal_records()
     assert result["personalRecords"][0]["type"] == "running"
     mock_garmin_client.get_personal_records.assert_not_called()
+
+
+def test_wellness_and_training_cache_keys_do_not_collide(mock_garmin_client):
+    from garmin_mcp.server import get_daily_wellness, get_training_status
+    cache.set_daily_data("wellness:2026-04-23", {"stats": {"totalSteps": 1}})
+    cache.set_daily_data("training:2026-04-23", {"readiness": {"score": 99}})
+    w = get_daily_wellness("2026-04-23")
+    t = get_training_status("2026-04-23")
+    assert "stats" in w
+    assert "readiness" in t
+    mock_garmin_client.get_daily_wellness.assert_not_called()
+    mock_garmin_client.get_training_status.assert_not_called()
