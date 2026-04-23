@@ -11,20 +11,18 @@ def test_setup_main_prompts_and_saves_tokens(monkeypatch, tmp_path):
         instance = MockGarmin.return_value
         setup_main()
     MockGarmin.assert_called_once_with("test@example.com", "testpass")
-    instance.login.assert_called_once()
-    instance.garth.dump.assert_called_once_with(str(tmp_path))
+    instance.login.assert_called_once_with(tokenstore=str(tmp_path))
 
 
-def test_setup_main_warns_if_token_save_fails(monkeypatch, tmp_path, capsys):
+def test_setup_main_prints_token_dir_on_success(monkeypatch, tmp_path, capsys):
     monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
     with patch("garmin_mcp.auth.input", return_value="test@example.com"), \
          patch("garmin_mcp.auth.getpass.getpass", return_value="testpass"), \
-         patch("garmin_mcp.auth.Garmin") as MockGarmin:
-        instance = MockGarmin.return_value
-        instance.garth.dump.side_effect = OSError("permission denied")
+         patch("garmin_mcp.auth.Garmin"):
         setup_main()
     captured = capsys.readouterr()
-    assert "Warning" in captured.out
+    assert str(tmp_path) in captured.out
+    assert "Authenticated" in captured.out
 
 
 def test_setup_main_exits_on_login_failure(monkeypatch, tmp_path):
