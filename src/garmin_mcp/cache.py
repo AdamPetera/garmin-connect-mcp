@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 _db_path: Path = Path.home() / ".garmin_mcp_cache.db"
 _SHORT_TTL = timedelta(hours=1)
 _STATIC_TTL = timedelta(hours=4)
+_VALID_TABLES = frozenset({"activity_list", "daily_data", "static_data"})
 
 
 @contextmanager
@@ -51,6 +52,8 @@ def _connect():
 
 
 def _cache_get(table: str, cache_key: str, ttl: timedelta | None) -> dict | list | None:
+    if table not in _VALID_TABLES:
+        raise ValueError(f"Invalid cache table: {table!r}")
     try:
         with _connect() as conn:
             row = conn.execute(
@@ -68,6 +71,8 @@ def _cache_get(table: str, cache_key: str, ttl: timedelta | None) -> dict | list
 
 
 def _cache_set(table: str, cache_key: str, data: dict | list) -> None:
+    if table not in _VALID_TABLES:
+        raise ValueError(f"Invalid cache table: {table!r}")
     try:
         with _connect() as conn:
             conn.execute(
