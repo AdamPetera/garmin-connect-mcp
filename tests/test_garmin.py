@@ -20,23 +20,23 @@ def client(mock_api, monkeypatch, tmp_path):
     return GarminClient()
 
 
-def test_raises_without_email(monkeypatch, tmp_path):
+def test_raises_when_login_fails_without_credentials(monkeypatch, tmp_path):
     monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
     monkeypatch.delenv("GARMIN_EMAIL", raising=False)
     monkeypatch.delenv("GARMIN_PASSWORD", raising=False)
     with patch("garmin_mcp.garmin.Garmin") as MockGarmin:
-        MockGarmin.return_value.garth.load.side_effect = FileNotFoundError
+        MockGarmin.return_value.login.side_effect = Exception("no tokens")
         with pytest.raises(RuntimeError, match="garmin-mcp-setup"):
             GarminClient()
 
 
-def test_raises_without_password(monkeypatch, tmp_path):
+def test_raises_original_error_when_login_fails_with_credentials(monkeypatch, tmp_path):
     monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
     monkeypatch.setenv("GARMIN_EMAIL", "test@example.com")
-    monkeypatch.delenv("GARMIN_PASSWORD", raising=False)
+    monkeypatch.setenv("GARMIN_PASSWORD", "testpass")
     with patch("garmin_mcp.garmin.Garmin") as MockGarmin:
-        MockGarmin.return_value.garth.load.side_effect = FileNotFoundError
-        with pytest.raises(RuntimeError, match="garmin-mcp-setup"):
+        MockGarmin.return_value.login.side_effect = Exception("auth failed")
+        with pytest.raises(Exception, match="auth failed"):
             GarminClient()
 
 
@@ -91,39 +91,33 @@ def test_get_last_activity_raises_after_two_failures(client, mock_api):
     mock_sleep.assert_called_once_with(2)
 
 
-def test_uses_garth_tokens_when_available(monkeypatch, tmp_path):
-    monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
-    monkeypatch.delenv("GARMIN_EMAIL", raising=False)
-    monkeypatch.delenv("GARMIN_PASSWORD", raising=False)
-    with patch("garmin_mcp.garmin.Garmin") as MockGarmin:
-        instance = MockGarmin.return_value
-        instance.garth.load.return_value = None  # tokens found — no side_effect
-        client = GarminClient()
-    instance.garth.load.assert_called_once_with(str(tmp_path))
-    instance.login.assert_called_once()
-
-
-def test_falls_back_to_env_creds_when_no_tokens(monkeypatch, tmp_path):
+def test_login_called_with_token_dir(monkeypatch, tmp_path):
     monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
     monkeypatch.setenv("GARMIN_EMAIL", "test@example.com")
     monkeypatch.setenv("GARMIN_PASSWORD", "testpass")
     with patch("garmin_mcp.garmin.Garmin") as MockGarmin:
         instance = MockGarmin.return_value
-        instance.garth.load.side_effect = FileNotFoundError
         GarminClient()
-    instance.login.assert_called_once()
-    instance.garth.dump.assert_called_once_with(str(tmp_path))
+    instance.login.assert_called_once_with(tokenstore=str(tmp_path))
 
 
-def test_raises_when_no_tokens_and_no_env_creds(monkeypatch, tmp_path):
+def test_garmin_constructed_with_credentials_when_provided(monkeypatch, tmp_path):
+    monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
+    monkeypatch.setenv("GARMIN_EMAIL", "test@example.com")
+    monkeypatch.setenv("GARMIN_PASSWORD", "testpass")
+    with patch("garmin_mcp.garmin.Garmin") as MockGarmin:
+        GarminClient()
+    MockGarmin.assert_called_once_with("test@example.com", "testpass")
+
+
+def test_garmin_constructed_without_credentials_when_not_provided(monkeypatch, tmp_path):
     monkeypatch.setenv("GARMIN_TOKEN_DIR", str(tmp_path))
     monkeypatch.delenv("GARMIN_EMAIL", raising=False)
     monkeypatch.delenv("GARMIN_PASSWORD", raising=False)
     with patch("garmin_mcp.garmin.Garmin") as MockGarmin:
-        instance = MockGarmin.return_value
-        instance.garth.load.side_effect = FileNotFoundError
-        with pytest.raises(RuntimeError, match="garmin-mcp-setup"):
-            GarminClient()
+        MockGarmin.return_value.login.return_value = None  # login succeeds
+        GarminClient()
+    MockGarmin.assert_called_once_with()
 
 
 def test_get_daily_wellness_calls_all_endpoints(client, mock_api):
