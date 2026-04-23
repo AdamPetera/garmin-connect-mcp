@@ -17,7 +17,7 @@ def setup_main() -> None:
         raise SystemExit(1)
     token_dir = _token_dir()
     try:
-        api.garth.dump(token_dir)
+        api.client.dump(token_dir)
         print(f"Authenticated. Tokens saved to {token_dir}.")
         print("Run 'garmin-mcp' to start the server.")
     except Exception as exc:

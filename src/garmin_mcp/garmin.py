@@ -30,14 +30,15 @@ class GarminClient:
     def __init__(self) -> None:
         token_dir = _token_dir()
 
-        # 1. Try garth tokens
+        # 1. Try saved tokens
         try:
             api = Garmin()
-            api.garth.load(token_dir)
-            api.login()
+            api.client.load(token_dir)
+            if not api.client.is_authenticated:
+                api.login()
             self._api = api
             return
-        except (FileNotFoundError, OSError):
+        except Exception:
             pass
 
         # 2. Fall back to env credentials
@@ -51,7 +52,7 @@ class GarminClient:
         api = Garmin(email, password)
         api.login()
         try:
-            api.garth.dump(token_dir)
+            api.client.dump(token_dir)
         except Exception as exc:
             logger.warning("Could not save auth tokens to %s: %s", token_dir, exc)
         self._api = api
