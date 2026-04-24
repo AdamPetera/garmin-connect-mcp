@@ -130,6 +130,121 @@ def get_personal_records() -> dict:
     return data
 
 
+@mcp.tool()
+def get_workouts(start: int = 0, limit: int = 100) -> list:
+    """List saved workouts from Garmin Connect. Returns up to `limit` workouts starting at offset `start`."""
+    cache_key = f"workouts:{start}:{limit}"
+    cached = cache.get_static_data(cache_key)
+    if cached is not None:
+        return cached
+    client = _get_client()
+    data = client.get_workouts(start, limit)
+    cache.set_static_data(cache_key, data)
+    return data
+
+
+@mcp.tool()
+def get_workout_by_id(workout_id: str) -> dict:
+    """Get a saved workout by its ID."""
+    cache_key = f"workout:{workout_id}"
+    cached = cache.get_static_data(cache_key)
+    if cached is not None:
+        return cached
+    client = _get_client()
+    data = client.get_workout_by_id(workout_id)
+    cache.set_static_data(cache_key, data)
+    return data
+
+
+@mcp.tool()
+def upload_workout(workout_data: dict) -> dict:
+    """Create a new workout on Garmin Connect. Pass a workout definition dict with workoutName, sportType, workoutSegments, etc."""
+    client = _get_client()
+    return client.upload_workout(workout_data)
+
+
+@mcp.tool()
+def upload_running_workout(workout_data: dict) -> dict:
+    """Create a running workout on Garmin Connect."""
+    client = _get_client()
+    return client.upload_running_workout(workout_data)
+
+
+@mcp.tool()
+def upload_cycling_workout(workout_data: dict) -> dict:
+    """Create a cycling workout on Garmin Connect."""
+    client = _get_client()
+    return client.upload_cycling_workout(workout_data)
+
+
+@mcp.tool()
+def upload_hiking_workout(workout_data: dict) -> dict:
+    """Create a hiking workout on Garmin Connect."""
+    client = _get_client()
+    return client.upload_hiking_workout(workout_data)
+
+
+@mcp.tool()
+def upload_swimming_workout(workout_data: dict) -> dict:
+    """Create a swimming workout on Garmin Connect."""
+    client = _get_client()
+    return client.upload_swimming_workout(workout_data)
+
+
+@mcp.tool()
+def upload_walking_workout(workout_data: dict) -> dict:
+    """Create a walking workout on Garmin Connect."""
+    client = _get_client()
+    return client.upload_walking_workout(workout_data)
+
+
+@mcp.tool()
+def schedule_workout(workout_id: str, scheduled_date: str) -> dict:
+    """Schedule a saved workout to a calendar date. scheduled_date in YYYY-MM-DD format."""
+    client = _get_client()
+    return client.schedule_workout(workout_id, scheduled_date)
+
+
+@mcp.tool()
+def unschedule_workout(scheduled_workout_id: str) -> dict:
+    """Remove a workout from the calendar by its scheduled workout ID."""
+    client = _get_client()
+    return client.unschedule_workout(scheduled_workout_id)
+
+
+@mcp.tool()
+def get_scheduled_workouts(year: int, month: int) -> dict:
+    """Get all scheduled workouts for a given year and month."""
+    cache_key = f"scheduled_workouts:{year}:{month}"
+    cached = cache.get_daily_data(cache_key)
+    if cached is not None:
+        return cached
+    client = _get_client()
+    data = client.get_scheduled_workouts(year, month)
+    cache.set_daily_data(cache_key, data)
+    return data
+
+
+@mcp.tool()
+def get_scheduled_workout_by_id(scheduled_workout_id: str) -> dict:
+    """Get a specific scheduled workout by its scheduled workout ID."""
+    cache_key = f"scheduled_workout:{scheduled_workout_id}"
+    cached = cache.get_daily_data(cache_key)
+    if cached is not None:
+        return cached
+    client = _get_client()
+    data = client.get_scheduled_workout_by_id(scheduled_workout_id)
+    cache.set_daily_data(cache_key, data)
+    return data
+
+
+@mcp.tool()
+def delete_workout(workout_id: str) -> dict:
+    """Delete a saved workout by its ID."""
+    client = _get_client()
+    return client.delete_workout(workout_id)
+
+
 def main() -> None:
     logging.basicConfig(level=logging.WARNING)
     mcp.run()

@@ -75,3 +75,42 @@ class GarminClient:
 
     def get_personal_records(self) -> dict | list:
         return _with_retry(self._api.get_personal_record)
+
+    def get_workouts(self, start: int = 0, limit: int = 100) -> list:
+        return _with_retry(self._api.get_workouts, start, limit)
+
+    def get_workout_by_id(self, workout_id: str) -> dict:
+        return _with_retry(self._api.get_workout_by_id, workout_id)
+
+    def upload_workout(self, workout_data: dict | list | str) -> dict:
+        return _with_retry(self._api.upload_workout, workout_data)
+
+    def upload_running_workout(self, workout_data: dict) -> dict:
+        return _with_retry(self._api.upload_running_workout, workout_data)
+
+    def upload_cycling_workout(self, workout_data: dict) -> dict:
+        return _with_retry(self._api.upload_cycling_workout, workout_data)
+
+    def upload_hiking_workout(self, workout_data: dict) -> dict:
+        return _with_retry(self._api.upload_hiking_workout, workout_data)
+
+    def upload_swimming_workout(self, workout_data: dict) -> dict:
+        return _with_retry(self._api.upload_swimming_workout, workout_data)
+
+    def upload_walking_workout(self, workout_data: dict) -> dict:
+        return _with_retry(self._api.upload_walking_workout, workout_data)
+
+    def schedule_workout(self, workout_id: str, date_str: str) -> dict:
+        return _with_retry(self._api.schedule_workout, workout_id, date_str)
+
+    def unschedule_workout(self, scheduled_workout_id: str) -> dict:
+        return _with_retry(self._api.unschedule_workout, scheduled_workout_id)
+
+    def get_scheduled_workouts(self, year: int | str, month: int | str) -> dict:
+        return _with_retry(self._api.get_scheduled_workouts, year, month)
+
+    def get_scheduled_workout_by_id(self, scheduled_workout_id: str) -> dict:
+        return _with_retry(self._api.get_scheduled_workout_by_id, scheduled_workout_id)
+
+    def delete_workout(self, workout_id: str) -> dict:
+        return _with_retry(self._api.delete_workout, workout_id)
